@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Penyaluran Donasi Panti Asuhan</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+    <style>
+        body, h1, h2, p {
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
+            margin: 0;
+        }
+
+        /* Header */
+        header {
+            background-color: #303054;
+        }
+        header .navbar-brand {
+            font-size: 22px;
+            font-weight: 600;
+            color: #0000;
+        }
+        header .navbar-brand,
+        header .navbar-nav .nav-link {
+            color: #ffffff !important;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        header .navbar-brand:hover,
+        header .navbar-nav .nav-link:hover {
+            color: #dcdcdc !important;
+        }
+
+
+        /* Home Section */
+        .home-sec {
+            color: #303054;
+            text-align: center;
+            padding: 20px 0;
+            background: linear-gradient(to right, #f5f7fa, #c3cfe2);
+        }
+        .home-sec h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+        .home-sec p {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+
+        /* Form */
+        .registration-form {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #f5f5f5;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .registration-form h2 {
+            color: #303054;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .registration-form label {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .registration-form input, .registration-form button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 5px;
+        }
+        .registration-form input {
+            border: 1px solid #ccc;
+        }
+        .registration-form button {
+            background-color: #303054;
+            color: #fff;
+            border: none;
+            font-size: 1.1rem;
+            transition: background-color 0.3s;
+        }
+        .registration-form button:hover {
+            background-color: #4a4a75;
+        }
+        .registration-form .note {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .form-background {
+            background-image: url('https://example.com/background-image.jpg'); /* Background image for esthetics */
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #303054;
+            color: #e6edff;
+            padding: 50px 0;
+        }
+
+        footer h4 {
+            margin-bottom: 20px;
+        }
+
+        footer p a {
+            text-decoration: none;
+            color: #e6edff;
+        }
+
+        footer p a:hover {
+            text-decoration: none;
+            color: #e6edff;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light container">
+            <a class="navbar-brand" href="index.html">Donasi Panti Asuhan</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Beranda</a></li>
+                    <li class="nav-item"><a class="nav-link" href="about.html">Tentang</a></li>
+                    <li class="nav-item"><a class="nav-link" href="donation.html">Donasi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="register.html">Pengajuan Bantuan</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.html">Kontak</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Home Section -->
+    <section class="home-sec" id="home">
+        <h1>Selamat Datang di Sistem Penyaluran Donasi</h1>
+        <p>Mari bersama membangun harapan untuk masa depan yang lebih baik.</p>
+    </section>
+
+    <!-- Registration Form Section -->
+    <section class="form-background" id="register">
+        <div class="registration-form">
+            <h2 class="text-center">Formulir Pengajuan Bantuan</h2>
+            <form id="registrationForm">
+                <label for="name">Nama Lengkap:</label>
+                <input type="text" id="name" name="name" placeholder="Masukkan nama lengkap Anda" required>
+
+                <label for="ktm">Nomor Kartu Identitas (KTM):</label>
+                <input type="text" id="ktm" name="ktm" placeholder="Masukkan nomor identitas Anda" required>
+
+                <label for="email">Alamat Email:</label>
+                <input type="email" id="email" name="email" placeholder="Masukkan Email SSO Anda" required>
+
+                <label for="phone">Nomor Telepon:</label>
+                <input type="tel" id="phone" name="phone" placeholder="Masukkan nomor telepon yang dapat dihubungi" required>
+
+                <button type="button" onclick="goToAjukanBantuan()">Ajukan Bantuan</button>
+                <p class="note">Kami akan menghubungi Anda melalui email atau nomor telepon yang Anda berikan.</p>
+            </form>
+        </div>
+    </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <h4>Donasi Panti Asuhan</h4>
+                <p>&copy; 2024. Semua Hak Dilindungi. <a href="#">Kebijakan Privasi</a> | <a href="#">Syarat dan Ketentuan</a></p>
+            </div>
+        </footer>
+
+    <script>
+        function goToAjukanBantuan() {
+            window.location.href = 'pengajuan.html';
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

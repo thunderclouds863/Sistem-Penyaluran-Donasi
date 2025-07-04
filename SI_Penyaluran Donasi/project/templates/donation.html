@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Penyaluran Donasi Panti Asuhan</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+    <style>
+        body, h2 {
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
+            margin: 0;
+            background-color: #f3f4f6;
+        }
+
+        /* Header */
+        header {
+            background-color: #303054;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        header .navbar-brand {
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+        }
+        header .navbar-brand,
+        header .navbar-nav .nav-link {
+            color: #ffffff !important;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        header .navbar-brand:hover,
+        header .navbar-nav .nav-link:hover {
+            color: #dcdcdc !important;
+        }
+
+        /* Home Section */
+        .home-sec {
+            color: #303054;
+            text-align: center;
+            padding: 40px 0;
+            background: linear-gradient(to right, #f5f7fa, #c3cfe2);
+        }
+        .home-sec h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+        .home-sec p {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            padding: 80px 0;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .contact-section .heading {
+            text-align: center;
+        }
+
+        .contact-section .contact-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .contact-section .contact-form .form-control {
+            height: 50px;
+            border-radius: 5px;
+        }
+
+        .contact-section .contact-form textarea.form-control {
+            height: 122px;
+            margin-bottom: 10px;
+            resize: none;
+        }
+
+        .contact-section .contact-form .form-control:focus {
+            box-shadow: none;
+            border-color: #303054;
+        }
+
+        .btn1 {
+            background-color: #303054;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            transition: background-color 0.3s;
+        }
+
+        .btn1:hover {
+            background-color: #464666;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #303054;
+            color: #e6edff;
+            padding: 50px 0;
+        }
+
+        footer h4 {
+            margin-bottom: 20px;
+        }
+
+        footer p a {
+            text-decoration: none;
+            color: #e6edff;
+        }
+
+        footer p a:hover {
+            opacity: 0.7;
+        }
+
+        .social a {
+            margin: 0 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light container">
+            <a class="navbar-brand" href="index.html">Donasi Panti Asuhan</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item"><a class="nav-link" href="#home">Beranda</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">Tentang</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#donation">Donasi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#register">Pengajuan Bantuan</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Kontak</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Home Section -->
+    <section class="home-sec" id="home">
+        <h1>Selamat Datang di Sistem Penyaluran Donasi</h1>
+        <p>Mari bersama membangun harapan untuk masa depan yang lebih baik.</p>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <div class="heading">
+                <p>Fill this form, our team will collect your <span>Donation</span> or <span>Wastage</span> from your place.</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-12 mt-5">
+                    <form class="contact-form">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Your Name" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Mobile No." required>
+                                </div>
+                                <div class="form-group">
+                                    <select name="donation" id="donation" class="form-control" required>
+                                        <option value="" disabled selected>Choose Donation or Wastage</option>
+                                        <option value="food">Food</option>
+                                        <option value="clothes">Clothes</option>
+                                        <option value="footwear">Footwear</option>
+                                        <option value="books">Books</option>
+                                        <option value="fund">Fund</option>
+                                        <option value="gadget">Ele. Gadgets</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Address" required>
+                                </div>
+                                <div class="form-group">
+                                    <textarea class="form-control" name="text" placeholder="Message" required></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-3 text-center">
+                                <button type="submit" class="btn1">Submit Details</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container text-center">
+            <h4>Donasi Panti Asuhan</h4>
+            <p>&copy; 2024. Semua Hak Dilindungi. <a href="#">Kebijakan Privasi</a> | <a href="#">Syarat dan Ketentuan</a></p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
