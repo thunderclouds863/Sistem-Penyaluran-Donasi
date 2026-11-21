@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: penyaluran-donasi-demo
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
