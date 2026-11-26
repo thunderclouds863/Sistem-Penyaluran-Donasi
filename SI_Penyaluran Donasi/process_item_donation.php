@@ -1,53 +1,66 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 
-// Check if the user is logged in
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php"); // Redirect to login if not logged in
+if (empty($_SESSION['username'])) {
+    header("Location: login.html");
     exit();
 }
 
-// Connect to the database
-$conn = new mysqli("localhost", "root", "", "donation_system");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: barang.php");
+    exit();
 }
 
-// Retrieve the logged-in user's ID based on the username
-$username = $_SESSION['username']; // Username from session
-$query = "SELECT id FROM signup WHERE username = ?";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("s", $username);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows > 0) {
-    $user = $result->fetch_assoc();
-    $user_id = $user['id']; // Get the user's ID
-} else {
-    // Handle error if no user found
-    header("Location: login.php");
-    exit;
+if (!csrf_verify()) {
+    set_flash('error', 'Sesi formulir tidak valid. Silakan muat ulang halaman dan coba lagi.');
+    header("Location: barang.php");
+    exit();
 }
 
-// Retrieve the form data
-$location = htmlspecialchars(trim($_POST['location']));
-$item_type = htmlspecialchars(trim($_POST['item_type']));
-$contact_info = htmlspecialchars(trim($_POST['contact_info']));
+try {
+    $pdo = get_pdo();
+    $user_id = get_current_user_id($pdo);
+    if (!$user_id) {
+        header("Location: login.html");
+        exit();
+    }
 
-$donation_center_id = 1; // Replace 1 with the actual ID of the donation center
+    $location = trim($_POST['location'] ?? '');
+    $item_type = trim($_POST['item_type'] ?? '');
+    $contact_info = trim($_POST['contact_info'] ?? '');
 
-// Prepare and execute the donation insertion query
-$stmt = $conn->prepare("INSERT INTO item_donations (location, item_type, contact_info, signup_id, donation_center_id) VALUES (?, ?, ?, ?, ?)");
-$stmt->bind_param("sssii", $location, $item_type, $contact_info, $user_id, $donation_center_id);
-$stmt->execute();
+    if ($location === '' || $item_type === '' || $contact_info === '') {
+        set_flash('error', 'Mohon lengkapi lokasi pengumpulan, jenis barang, dan kontak info.');
+        header("Location: barang.php");
+        exit();
+    }
 
+    // Use selected donation center from session, falling back to latest approved/default center
+    $donation_center_id = !empty($_SESSION['selected_donation_center_id']) ? (int) $_SESSION['selected_donation_center_id'] : null;
+    if (!$donation_center_id) {
+        $fallback = $pdo->query("SELECT id FROM donation_centers WHERE status IN ('Approved', 'Default') ORDER BY id ASC LIMIT 1")->fetch();
+        $donation_center_id = $fallback ? (int) $fallback['id'] : null;
+    }
 
-// Close the statement and connection
-$stmt->close();
-$conn->close();
+    if (!$donation_center_id) {
+        set_flash('error', 'Silakan pilih tempat donasi tujuan terlebih dahulu.');
+        header("Location: donation.php");
+        exit();
+    }
 
-// Redirect to the confirmation page
-header("Location: barang_confirmation.html");
-exit();
-?>
+    $stmt = $pdo->prepare("INSERT INTO item_donations (location, item_type, contact_info, status, signup_id, donation_center_id) VALUES (:location, :item_type, :contact, 'pending', :uid, :cid)");
+    $stmt->execute([
+        ':location' => $location,
+        ':item_type' => $item_type,
+        ':contact' => $contact_info,
+        ':uid' => $user_id,
+        ':cid' => $donation_center_id,
+    ]);
+
+    header("Location: barang_confirmation.html");
+    exit();
+} catch (PDOException $e) {
+    set_flash('error', 'Gagal menyimpan data donasi barang. Silakan coba lagi.');
+    header("Location: barang.php");
+    exit();
+}

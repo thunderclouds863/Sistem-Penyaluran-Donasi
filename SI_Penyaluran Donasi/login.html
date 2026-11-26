@@ -1,184 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Penyaluran Donasi Panti Asuhan</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
-  <style>
-    body,
-    h1,
-    h2,
-    p {
-      font-family: 'Poppins', sans-serif;
-      scroll-behavior: smooth;
-      margin: 0;
-    }
-
-    /* Header */
-    header {
-      background-color: #303054;
-    }
-
-    header .navbar-brand {
-      font-size: 22px;
-      font-weight: 600;
-      color: #0000;
-    }
-
-    header .navbar-brand,
-    header .navbar-nav .nav-link {
-      color: #ffffff !important;
-      font-weight: 500;
-      transition: color 0.3s;
-    }
-
-    header .navbar-brand:hover,
-    header .navbar-nav .nav-link:hover {
-      color: #dcdcdc !important;
-    }
-
-    /* Home Section */
-    .home-sec {
-      color: #303054;
-      text-align: center;
-      padding: 20px 0;
-      background: linear-gradient(to right, #f5f7fa, #c3cfe2);
-    }
-
-    .home-sec h1 {
-      font-size: 2.5rem;
-      font-weight: 600;
-    }
-
-    .home-sec p {
-      font-size: 1.3rem;
-      margin-bottom: 20px;
-    }
-
-    /* Form */
-    .registration-form {
-      max-width: 600px;
-      margin: 40px auto;
-      background-color: #f5f5f5;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .registration-form h2 {
-      color: #303054;
-      font-weight: bold;
-      margin-bottom: 20px;
-    }
-
-    .registration-form label {
-      font-weight: bold;
-      margin-top: 10px;
-    }
-
-    .registration-form input,
-    .registration-form button {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 5px;
-    }
-
-    .registration-form input {
-      border: 1px solid #ccc;
-    }
-
-    .registration-form button {
-      background-color: #303054;
-      color: #fff;
-      border: none;
-      font-size: 1.1rem;
-      transition: background-color 0.3s;
-    }
-
-    .registration-form button:hover {
-      background-color: #4a4a75;
-    }
-
-    .registration-form .note {
-      font-size: 0.9rem;
-      color: #666;
-    }
-
-    .form-background {
-      background-image: url('https://example.com/background-image.jpg');
-      background-size: cover;
-      background-position: center;
-    }
-
-    /* Footer */
-    footer {
-      background-color: #303054;
-      color: #e6edff;
-      padding: 50px 0;
-    }
-
-    footer h4 {
-      margin-bottom: 20px;
-    }
-
-    footer p a {
-      text-decoration: none;
-      color: #e6edff;
-    }
-
-    footer p a:hover {
-      text-decoration: none;
-      color: #e6edff;
-      opacity: 0.7;
-    }
-
-    .error-message {
-      color: red;
-      font-size: 0.9rem;
-      margin-top: 10px;
-    }
-  </style>
+  <title>Login Mahasiswa — Donasi Panti Asuhan</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/design-system.css">
 </head>
-
 <body>
-  <!-- Home Section -->
-  <section class="home-sec" id="home">
-    <h1>Selamat Datang di Sistem Penyaluran Donasi</h1>
-    <p>Mari bersama membangun harapan untuk masa depan yang lebih baik.</p>
-  </section>
+  <div class="auth-shell">
+    <!-- Left Editorial Artwork Panel -->
+    <aside class="auth-visual-panel">
+      <div class="auth-brand-top">
+        <a href="index.php">
+          <span class="brand-mark" aria-hidden="true" style="background:rgba(255,255,255,0.12);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 21C12 21 3 15.2 3 8.8C3 5.6 5.45 3 8.5 3C10.37 3 12 4.02 12 5.55C12 4.02 13.63 3 15.5 3C18.55 3 21 5.6 21 8.8C21 15.2 12 21 12 21Z" fill="#D95D39"/>
+              <path d="M8.5 11.8L11 14.3L16 9.2" stroke="#FAF8F5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Donasi Panti Asuhan
+        </a>
+        <a href="index.php" class="auth-back-link">&larr; Beranda</a>
+      </div>
 
-  <!-- Registration Form Section -->
-  <section class="form-background" id="register">
-    <div class="registration-form">
-      <h2 class="text-center">Login Mahasiswa</h2>
-      <form id="registrationForm" action="login.php" method="POST">
-        <label for="name">Username:</label>
-        <input type="text" id="name" name="name" placeholder="Masukkan Username Anda" required>
+      <div class="auth-art-center">
+        <img src="assets/img/auth-donor.jpg" alt="Ilustrasi berbagi donasi kepada panti asuhan" class="auth-art-image">
+        <div class="auth-art-caption">
+          <h2>Setiap Kebaikan Tercatat &amp; Tersalurkan</h2>
+          <p>Masuk untuk memilih panti asuhan, mengirim donasi dana atau barang, serta memantau status penyaluran Anda.</p>
+        </div>
+      </div>
 
-        <label for="ktm">Password:</label>
-        <input type="password" id="ktm" name="ktm" placeholder="Masukkan Password" required>
+      <div class="auth-visual-foot">
+        <span>Sistem Penyaluran Donasi</span>
+        <span>&copy; 2024 Donasi Panti Asuhan</span>
+      </div>
+    </aside>
 
-        <button type="submit">Login</button>
-        <p class="note">Belum Mempunyai Akun? <a class="note" href="signup.html">Daftar Sekarang</a></p>
+    <!-- Right Authentication Form Panel -->
+    <main class="auth-form-panel">
+      <div class="auth-mobile-header">
+        <a class="brand-link" href="index.php">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 21C12 21 3 15.2 3 8.8C3 5.6 5.45 3 8.5 3C10.37 3 12 4.02 12 5.55C12 4.02 13.63 3 15.5 3C18.55 3 21 5.6 21 8.8C21 15.2 12 21 12 21Z" fill="#D95D39"/>
+            </svg>
+          </span>
+          <span>Donasi Panti Asuhan</span>
+        </a>
+        <a href="index.php" class="btn btn-ghost btn-sm">&larr; Beranda</a>
+      </div>
 
-      </form>
-    </div>
-  </section>
+      <div class="auth-form-box">
+        <div class="role-switcher" role="tablist" aria-label="Pilih tipe login">
+          <a href="login.html" class="is-active" aria-current="page">Mahasiswa / Donatur</a>
+          <a href="login_admin.html">Administrator</a>
+        </div>
 
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <h4>Donasi Panti Asuhan</h4>
-      <p>&copy; 2024. Semua Hak Dilindungi. <a href="#">Kebijakan Privasi</a> | <a href="#">Syarat dan Ketentuan</a></p>
-    </div>
-  </footer>
+        <h1 class="auth-heading">Masuk ke Akun Anda</h1>
+        <p class="auth-subheading">Gunakan username dan password terdaftar untuk melanjutkan donasi atau pengajuan bantuan.</p>
 
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+        <form id="registrationForm" action="login.php" method="POST">
+          <div class="form-field">
+            <label class="form-label" for="name">Username</label>
+            <input type="text" id="name" name="name" class="form-control-app" placeholder="Masukkan username Anda" autocomplete="username" required>
+          </div>
+
+          <div class="form-field">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label class="form-label" for="ktm" style="margin-bottom:0;">Password</label>
+              <a href="forgot_password.php" style="font-size:0.84rem; font-weight:600;">Lupa Password?</a>
+            </div>
+            <div class="input-password-wrap">
+              <input type="password" id="ktm" name="ktm" class="form-control-app" placeholder="Masukkan password Anda" autocomplete="current-password" required>
+              <button type="button" class="password-toggle-btn" data-toggle-password="ktm" aria-label="Tampilkan password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg btn-block" style="margin-top:8px;">Masuk Sekarang</button>
+        </form>
+
+        <p class="auth-footer-note">
+          Belum mempunyai akun? <a href="signup.html">Daftar Sekarang</a>
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/app.js"></script>
 </body>
-
 </html>
