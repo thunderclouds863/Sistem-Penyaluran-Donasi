@@ -1,11 +1,12 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['username'])) {
     header("Location: login.html");
     exit;
 }
+$flash = get_flash();
+$selectedCenterName = $_SESSION['selected_donation_center_name'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -50,9 +51,20 @@ if (!isset($_SESSION['username'])) {
     <div class="checkout-grid">
       <div class="surface-card">
         <h2 style="font-size:1.35rem; margin-bottom:6px;">Rincian Donasi Dana</h2>
-        <p class="form-hint" style="margin-bottom:22px;">Pilih nominal cepat atau masukkan jumlah sesuai keinginan Anda.</p>
+        <p class="form-hint" style="margin-bottom:18px;">
+          <?php if ($selectedCenterName): ?>
+            Tujuan penyaluran: <strong><?= e($selectedCenterName) ?></strong>.
+          <?php else: ?>
+            Pilih nominal cepat atau masukkan jumlah sesuai keinginan Anda.
+          <?php endif; ?>
+        </p>
+
+        <?php if ($flash): ?>
+          <div class="alert-banner is-<?= e($flash['type']) ?>" role="alert"><?= e($flash['message']) ?></div>
+        <?php endif; ?>
 
         <form id="donationForm" action="process_qris_donation.php" method="POST">
+          <?= csrf_field() ?>
           <div class="form-field">
             <label class="form-label">Pilih Nominal Cepat</label>
             <div class="amount-chips">

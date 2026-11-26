@@ -82,8 +82,19 @@ CREATE TABLE IF NOT EXISTS donation_requests (
     rejection_reason TEXT NULL,
     signup_id INT NOT NULL,                                             -- User ID from signup table
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                     -- Timestamp of the request
-    FOREIGN KEY (signup_id) REFERENCES signup(id) ON DELETE CASCADE, -- Cascade delete if the user is deleted
-    FOREIGN KEY (signup_id) REFERENCES signup(id) ON DELETE CASCADE    -- Foreign key to the signup table
+    FOREIGN KEY (signup_id) REFERENCES signup(id) ON DELETE CASCADE  -- Foreign key to the signup table
+);
+
+-- Table for secure single-use password reset tokens
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    signup_id INT NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_token_hash (token_hash),
+    FOREIGN KEY (signup_id) REFERENCES signup(id) ON DELETE CASCADE
 );
 
 -- Table for storing contact messages

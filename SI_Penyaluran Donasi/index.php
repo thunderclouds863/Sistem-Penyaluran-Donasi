@@ -1,36 +1,52 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 $isLoggedIn = isset($_SESSION['username']);
+$pdo = get_pdo();
+$flash = get_flash();
 
-// Database connection
-$host = 'localhost';
-$dbname = 'donation_system';
-$username = 'root';
-$password = '';
-try {
-  $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-  $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-  echo "Connection failed: " . $e->getMessage();
-  die();
+// Fetching user-scoped donation & request history only when logged in
+$donationStatus = [];
+if ($isLoggedIn) {
+  $currentUserId = get_current_user_id($pdo);
+  if ($currentUserId) {
+    $finStmt = $pdo->prepare("SELECT amount, status, created_at FROM financial_donations WHERE signup_id = :uid");
+    $finStmt->execute([':uid' => $currentUserId]);
+    foreach ($finStmt->fetchAll() as $row) {
+      $donationStatus[] = [
+        'type' => 'Donasi Finansial',
+        'description' => 'Rp ' . number_format((float) $row['amount'], 0, ',', '.'),
+        'status' => $row['status'],
+        'created_at' => $row['created_at'],
+      ];
+    }
+
+    $itemStmt = $pdo->prepare("SELECT item_type, status, created_at FROM item_donations WHERE signup_id = :uid");
+    $itemStmt->execute([':uid' => $currentUserId]);
+    foreach ($itemStmt->fetchAll() as $row) {
+      $donationStatus[] = [
+        'type' => 'Donasi Barang',
+        'description' => 'Barang: ' . $row['item_type'],
+        'status' => $row['status'],
+        'created_at' => $row['created_at'],
+      ];
+    }
+
+    $reqStmt = $pdo->prepare("SELECT assistance_type, status, created_at FROM donation_requests WHERE signup_id = :uid");
+    $reqStmt->execute([':uid' => $currentUserId]);
+    foreach ($reqStmt->fetchAll() as $row) {
+      $donationStatus[] = [
+        'type' => 'Pengajuan Bantuan',
+        'description' => 'Bantuan: ' . $row['assistance_type'],
+        'status' => $row['status'],
+        'created_at' => $row['created_at'],
+      ];
+    }
+
+    usort($donationStatus, function ($a, $b) {
+      return strcmp((string) $b['created_at'], (string) $a['created_at']);
+    });
+  }
 }
-
-// Fetching data for the modal
-$query = "
-    SELECT 'Donasi Finansial' AS type, CONCAT('Rp ', FORMAT(amount, 0, 'id_ID')) AS description, status, id AS sort_key
-    FROM financial_donations
-    UNION ALL
-    SELECT 'Donasi Barang', CONCAT('Barang: ', item_type), status, created_at AS sort_key
-    FROM item_donations
-    UNION ALL
-    SELECT 'Pengajuan Bantuan', CONCAT('Bantuan: ', assistance_type), status, created_at AS sort_key
-    FROM donation_requests
-    ORDER BY sort_key DESC;
-";
-
-$stmt = $pdo->prepare($query);
-$stmt->execute();
-$donationStatus = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Live impact metrics from database
 $totalApprovedCenters = (int) $pdo->query("SELECT COUNT(*) FROM donation_centers WHERE status = 'Approved'")->fetchColumn() + 5;
@@ -415,7 +431,11 @@ $totalDonationsCount = (int) $pdo->query("SELECT COUNT(*) FROM financial_donatio
         <div class="contact-form-card">
           <h3 style="font-size:1.3rem; margin-bottom:6px;">Kirim Pesan</h3>
           <p class="form-hint" style="margin-bottom:22px;">Pesan Anda akan langsung masuk ke dashboard pengelola kami.</p>
+          <?php if ($flash): ?>
+            <div class="alert-banner is-<?= e($flash['type']) ?>" role="status"><?= e($flash['message']) ?></div>
+          <?php endif; ?>
           <form method="POST" action="submit_contact.php">
+            <?= csrf_field() ?>
             <div class="form-field">
               <label class="form-label" for="contact_name">Nama Lengkap</label>
               <input type="text" id="contact_name" name="full_name" class="form-control-app" placeholder="Masukkan nama Anda" required>

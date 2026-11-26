@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/includes/bootstrap.php'; ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -53,6 +54,12 @@
       <div class="auth-form-box">
         <h1 class="auth-heading">Verifikasi Kode Anda</h1>
         <p class="auth-subheading">Periksa kotak masuk email Anda dan masukkan kode verifikasi di bawah ini.</p>
+
+        <?php if (!empty($_SESSION['demo_verification_code'])): ?>
+          <div class="alert-banner is-info" role="status" id="demoVerifyBanner">
+            <div>Mode Demo (tanpa server SMTP): kode verifikasi Anda adalah <strong id="demoVerifyCode"><?= e($_SESSION['demo_verification_code']) ?></strong></div>
+          </div>
+        <?php endif; ?>
 
         <form action="verify_code.php" method="POST">
           <div class="form-field">

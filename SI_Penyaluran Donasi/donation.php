@@ -1,18 +1,8 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 $loggedIn = isset($_SESSION['username']);
-
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "donation_system";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-  die("Connection failed: " . $conn->connect_error);
-}
+$conn = get_mysqli();
+$flash = get_flash();
 
 // Get donation status for logged-in user
 $donation_status = null;
@@ -133,6 +123,9 @@ if ($loggedIn) {
 
   <!-- Main Content -->
   <main class="container-app">
+    <?php if ($flash): ?>
+      <div class="alert-banner is-<?= e($flash['type']) ?>" style="margin-top:24px; margin-bottom:0;" role="status"><?= e($flash['message']) ?></div>
+    <?php endif; ?>
     <?php if ($loggedIn): ?>
       <div class="centers-layout">
         <!-- Left Column: Donation Centers List -->
@@ -204,6 +197,7 @@ if ($loggedIn) {
           <h3>Ajukan Tempat Donasi Baru</h3>
           <p>Belum menemukan panti asuhan atau posko yang Anda tuju? Daftarkan di sini untuk ditinjau oleh admin.</p>
           <form id="newDonationCenterForm" action="process_donation_center.php" method="POST">
+            <?= csrf_field() ?>
             <div class="form-field">
               <label class="form-label" for="new_name">Nama Panti Asuhan / Posko</label>
               <input type="text" class="form-control-app" id="new_name" name="new_name" placeholder="Contoh: Panti Asuhan Nurul Huda" required>

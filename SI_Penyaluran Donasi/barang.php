@@ -1,11 +1,12 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 
-// Redirect if the user is not logged in
 if (!isset($_SESSION['username'])) {
     header("Location: login.html");
     exit();
 }
+$flash = get_flash();
+$selectedCenterName = $_SESSION['selected_donation_center_name'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -50,7 +51,17 @@ if (!isset($_SESSION['username'])) {
     <div class="checkout-grid">
       <div class="surface-card">
         <h2 style="font-size:1.35rem; margin-bottom:6px;">Detail Barang Donasi</h2>
-        <p class="form-hint" style="margin-bottom:22px;">Pastikan barang dalam kondisi bersih dan layak pakai sebelum diserahkan ke posko.</p>
+        <p class="form-hint" style="margin-bottom:18px;">
+          <?php if ($selectedCenterName): ?>
+            Tujuan penyaluran: <strong><?= e($selectedCenterName) ?></strong>.
+          <?php else: ?>
+            Pastikan barang dalam kondisi bersih dan layak pakai sebelum diserahkan ke posko.
+          <?php endif; ?>
+        </p>
+
+        <?php if ($flash): ?>
+          <div class="alert-banner is-<?= e($flash['type']) ?>" role="alert"><?= e($flash['message']) ?></div>
+        <?php endif; ?>
 
         <?php if (isset($_GET['success']) && $_GET['success'] == 'true'): ?>
           <div class="alert-banner is-success" role="status">
@@ -59,6 +70,7 @@ if (!isset($_SESSION['username'])) {
         <?php endif; ?>
 
         <form action="process_item_donation.php" method="POST">
+          <?= csrf_field() ?>
           <div class="form-field">
             <label class="form-label" for="location">Lokasi Pengumpulan (Drop-Off)</label>
             <select id="location" name="location" class="form-control-app" required>

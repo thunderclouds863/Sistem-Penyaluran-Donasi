@@ -1,0 +1,3 @@
+# Uploaded user documents (keep directory, ignore runtime files)
+SI_Penyaluran Donasi/uploads/documents/*
+!SI_Penyaluran Donasi/uploads/documents/.gitkeep

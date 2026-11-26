@@ -1,11 +1,11 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 
-// Redirect if the user is not logged in
 if (!isset($_SESSION['username'])) {
   header("Location: login.html");
   exit();
 }
+$flash = get_flash();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -69,9 +69,14 @@ if (!isset($_SESSION['username'])) {
     <div class="checkout-grid">
       <div class="surface-card">
         <h2 style="font-size:1.35rem; margin-bottom:6px;">Detail Permohonan Bantuan</h2>
-        <p class="form-hint" style="margin-bottom:22px;">Lengkapi deskripsi kebutuhan secara jelas serta lampirkan dokumen pendukung.</p>
+        <p class="form-hint" style="margin-bottom:22px;">Lengkapi deskripsi kebutuhan secara jelas serta lampirkan dokumen pendukung (PDF/JPG/PNG, maks. 5 MB).</p>
+
+        <?php if ($flash): ?>
+          <div class="alert-banner is-<?= e($flash['type']) ?>" role="alert"><?= e($flash['message']) ?></div>
+        <?php endif; ?>
 
         <form action="pengajuan.php" method="POST" enctype="multipart/form-data">
+          <?= csrf_field() ?>
           <div class="form-field">
             <label class="form-label" for="assistanceType">Jenis Bantuan</label>
             <select id="assistanceType" name="assistanceType" class="form-control-app" required>
