@@ -17,657 +17,470 @@ try {
 
 // Fetching data for the modal
 $query = "
-    SELECT 'Financial Donation' AS type, CONCAT('Amount: ', amount) AS description, status, id AS updated_at
+    SELECT 'Donasi Finansial' AS type, CONCAT('Rp ', FORMAT(amount, 0, 'id_ID')) AS description, status, id AS sort_key
     FROM financial_donations
     UNION ALL
-    SELECT 'Item Donation', CONCAT('Item: ', item_type), status, created_at AS updated_at
+    SELECT 'Donasi Barang', CONCAT('Barang: ', item_type), status, created_at AS sort_key
     FROM item_donations
     UNION ALL
-    SELECT 'Donation Request', CONCAT('Assistance: ', assistance_type), status, created_at AS updated_at
+    SELECT 'Pengajuan Bantuan', CONCAT('Bantuan: ', assistance_type), status, created_at AS sort_key
     FROM donation_requests
-    ORDER BY updated_at DESC;
+    ORDER BY sort_key DESC;
 ";
-
-
-
-
-
 
 $stmt = $pdo->prepare($query);
 $stmt->execute();
 $donationStatus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Live impact metrics from database
+$totalApprovedCenters = (int) $pdo->query("SELECT COUNT(*) FROM donation_centers WHERE status = 'Approved'")->fetchColumn() + 5;
+$totalConfirmedFunds = (float) $pdo->query("SELECT COALESCE(SUM(amount), 0) FROM financial_donations WHERE status = 'Confirmed'")->fetchColumn();
+$totalDonationsCount = (int) $pdo->query("SELECT COUNT(*) FROM financial_donations")->fetchColumn()
+                     + (int) $pdo->query("SELECT COUNT(*) FROM item_donations")->fetchColumn();
 ?>
-
-
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Penyaluran Donasi Panti Asuhan</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
-  <link rel="shortcut icon" href="img/don/salary.png" type="image/x-icon">
-  <style>
-    /* Custom CSS for modal and scrollbar */
-
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700&display=swap');
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-      scroll-behavior: smooth;
-    }
-
-    body {
-      padding-top: 70px;
-      /* Sesuaikan dengan tinggi navbar */
-    }
-
-    header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      z-index: 1000;
-      /* Pastikan tetap berada di atas konten lainnya */
-      background-color: #303054;
-      /* Pastikan warna latar belakang terlihat */
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      /* Tambahkan bayangan untuk efek */
-    }
-
-
-    /* Heading */
-    .heading h2 {
-      font-size: 28px;
-      font-weight: 500;
-      border-left: 8px solid #303054;
-      padding: 5px 15px;
-      margin-bottom: 15px;
-    }
-
-    .heading p {
-      font-size: 18px;
-    }
-
-    .heading p span {
-      font-weight: 600;
-      color: #303054;
-    }
-
-    /* Buttons */
-    .btn1 {
-      font-size: 1rem;
-      font-weight: 400;
-      background-color: #303054;
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 5px;
-      text-decoration: none !important;
-      transition: all 0.5s;
-    }
-
-    .btn1:hover {
-      background-color: #e6edff;
-      color: #303054;
-    }
-
-    /* Header */
-    header {
-      background-color: #303054;
-    }
-
-    header .navbar-brand {
-      font-size: 22px;
-      font-weight: 600;
-      color: #0000;
-    }
-
-    header .navbar-brand,
-    header .navbar-nav .nav-link {
-      color: #ffffff !important;
-      font-weight: 500;
-      transition: color 0.3s;
-    }
-
-    header .navbar-brand:hover,
-    header .navbar-nav .nav-link:hover {
-      color: #dcdcdc !important;
-    }
-
-    .dropdown-menu {
-      min-width: 200px;
-      /* Adjust width as necessary */
-    }
-
-    .dropdown-header {
-      font-weight: bold;
-      color: #303054;
-    }
-
-    .dropdown-item {
-      color: #303054;
-    }
-
-    .dropdown-item:hover {
-      background-color: #f1f1f1;
-      /* Change background color on hover */
-    }
-
-    nav {
-      padding: 8px 0 !important;
-      position: fixed;
-    }
-
-    .cont-sec {
-      padding: 8px;
-      background-color: #e6edff;
-      width: 100%;
-    }
-
-    .cont-sec .contact-cont {
-      display: flex;
-      flex-wrap: wrap;
-    }
-
-    .cont-sec p {
-      margin: 0;
-    }
-
-    .cont-sec p a {
-      text-decoration: none;
-      color: #303054;
-    }
-
-    .cont-sec .social {
-      text-align: right;
-    }
-
-    .cont-sec .social a img {
-      width: 20px;
-      margin-left: 15px;
-    }
-
-    .home-sec {
-      padding: 100px 0;
-    }
-
-    h1,
-    h2,
-    p {
-      color: black;
-    }
-
-    .buttons .btn1 {
-      background-color: #ff6b6b;
-      color: #ffffff;
-      padding: 10px 20px;
-      border-radius: 5px;
-      text-decoration: none;
-      transition: background-color 0.3s;
-    }
-
-    .buttons .btn1:hover {
-      background-color: #ff8e8e;
-    }
-
-    .home-sec .home-content {
-      align-items: center;
-    }
-
-    .home-sec .home-content h1 {
-      font-size: 2.3rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-
-    .home-sec .home-content h2 span {
-      color: #14e20d;
-    }
-
-    .home-sec .home-content h2 {
-      font-size: 1.8rem;
-      font-weight: 600;
-      margin-bottom: 30px;
-    }
-
-    .home-sec .home-content p {
-      font-size: 1.3rem;
-      margin-bottom: 30px;
-    }
-
-    .home-sec .img-sec {
-      display: flex;
-      justify-content: center;
-    }
-
-    /* About section */
-    .about-sec {
-      padding: 150px 0;
-      background-color: #e6edff;
-    }
-
-    .about-sec img {
-      width: 350px;
-      border: 5px solid #303054;
-      border-radius: 5px;
-    }
-
-    .about-sec .about-txt p {
-      font-size: 18px;
-    }
-
-    /* Donation Section */
-    .don-sec {
-      background-color: #e6edff;
-      padding: 150px 0;
-    }
-
-    .don-sec .don-box {
-      margin: 50px 0;
-      background-color: #fff;
-      padding: 50px;
-      text-align: center;
-      border-radius: 5px;
-      box-shadow: 0 0 15px #b4afaf;
-      transition: all 1s;
-    }
-
-    .don-sec .don-box img {
-      width: 70px;
-      transition: all 1s;
-    }
-
-    .don-sec .don-box h3 {
-      margin: 15px 0 10px;
-    }
-
-    .don-sec .don-box p {
-      margin-bottom: 25px;
-    }
-
-    .don-sec .don-box:hover img {
-      transform: scale(1.1);
-    }
-
-    /* Missions */
-    .mission {
-      padding: 150px 0;
-    }
-
-    /* Gallery */
-    .gallery-sec {
-      position: relative;
-      padding: 50px 0;
-    }
-
-    .gallery-sec .image-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      justify-content: center;
-      padding: 10px;
-    }
-
-    .gallery-sec .image-container .image {
-      height: 200px;
-      width: 300px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      overflow: hidden;
-    }
-
-    .gallery-sec .image-container .image img {
-      height: 100%;
-      width: 100%;
-      border: 5px solid #d4d4d4;
-      object-fit: cover;
-      transition: 0.2s linear;
-    }
-
-    .gallery-sec .image-container .image:hover img {
-      transform: scale(1.1);
-    }
-
-    .gallery-sec .pop-image {
-      position: fixed;
-      left: 0;
-      top: 0;
-      background: rgba(0, 0, 0, 0.8);
-      height: 100%;
-      width: 100%;
-      z-index: 100;
-      display: none;
-    }
-
-    .gallery-sec .pop-image span {
-      position: absolute;
-      top: 120px;
-      right: 50px;
-      font-size: 60px;
-      font-weight: bolder;
-      color: #ffffff;
-      cursor: pointer;
-      z-index: 100;
-    }
-
-    .gallery-sec .pop-image img {
-      position: absolute;
-      top: 55%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border: 3px solid #ffffff;
-      width: 750px;
-      object-fit: cover;
-    }
-
-    .row {
-      display: -ms-flexbox;
-      display: flex;
-      -ms-flex-wrap: wrap;
-      flex-wrap: wrap;
-      margin-right: -15px;
-      margin-left: -15px;
-      justify-content: space-around;
-    }
-
-    /* Contact Us */
-    .contact-section {
-      padding: 150px 0 80px;
-    }
-
-    .contact-section .contact-form .form-group {
-      margin-bottom: 20px;
-    }
-
-    .contact-section .contact-form .form-control {
-      height: 50px;
-      border-radius: 5px;
-    }
-
-    .contact-section .contact-form textarea.form-control {
-      height: 122px;
-      margin-bottom: 10px;
-      resize: none;
-    }
-
-    .contact-section .contact-form .form-control:focus {
-      box-shadow: none;
-    }
-
-    /* Footer */
-    footer {
-      background-color: #303054;
-      color: #e6edff;
-      padding: 50px 0;
-    }
-
-    footer h4 {
-      margin-bottom: 20px;
-    }
-
-    footer p a {
-      text-decoration: none;
-      color: #e6edff;
-    }
-
-    footer p a:hover {
-      text-decoration: none;
-      color: #e6edff;
-      opacity: 0.7;
-    }
-
-    .dropdown-menu {
-      background-color: #f8f9fa;
-      /* Warna latar belakang dropdown */
-      border: 1px solid #ddd;
-      /* Border dropdown */
-      border-radius: 5px;
-      /* Sudut melengkung */
-    }
-
-    .dropdown-item {
-      padding: 10px 20px;
-      /* Padding item dropdown */
-      transition: background-color 0.3s;
-      /* Efek transisi */
-    }
-
-    .dropdown-item:hover {
-      background-color: #007bff;
-      /* Warna latar belakang saat hover */
-      color: white;
-      /* Warna teks saat hover */
-    }
-
-    .dropdown-item i {
-      margin-right: 8px;
-      /* Jarak antara ikon dan teks */
-    }
-
-    .modal-content {
-      max-height: 70vh;
-      overflow-y: scroll;
-    }
-
-    .modal-body {
-      max-height: 50vh;
-      overflow-y: auto;
-    }
-
-    .navbar-nav .nav-item {
-      margin-left: 15px;
-    }
-  </style>
+  <title>Donasi Panti Asuhan — Sistem Penyaluran Donasi Transparan</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/design-system.css">
 </head>
-
 <body>
-  <header>
-    <nav class="navbar navbar-expand-lg navbar-light">
-      <div class="container">
-        <a class="navbar-brand" href="#">Donasi Panti Asuhan</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-          aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container-app nav-inner">
+      <a class="brand-link" href="index.php">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 21C12 21 3 15.2 3 8.8C3 5.6 5.45 3 8.5 3C10.37 3 12 4.02 12 5.55C12 4.02 13.63 3 15.5 3C18.55 3 21 5.6 21 8.8C21 15.2 12 21 12 21Z" fill="#D95D39"/>
+            <path d="M8.5 11.8L11 14.3L16 9.2" stroke="#FAF8F5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span>Donasi Panti Asuhan</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#home" class="active">Beranda</a></li>
+        <li><a href="#about">Tentang</a></li>
+        <li><a href="#donation">Cara Donasi</a></li>
+        <li><a href="formpengajuan.php">Pengajuan Bantuan</a></li>
+        <li><a href="#contact">Kontak</a></li>
+        <?php if ($isLoggedIn): ?>
+          <li><a href="#" data-modal-open="riwayatModal">Riwayat</a></li>
+        <?php endif; ?>
+      </ul>
+
+      <div class="nav-actions">
+        <?php if ($isLoggedIn): ?>
+          <a href="donation.php" class="btn btn-primary btn-sm">Mulai Donasi</a>
+          <div class="dropdown-wrap">
+            <button type="button" class="dropdown-trigger is-user" data-dropdown-toggle aria-expanded="false">
+              <span class="user-avatar-dot"><?= htmlspecialchars(substr($_SESSION['username'], 0, 1)) ?></span>
+              <span><?= htmlspecialchars($_SESSION['username']) ?></span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="dropdown-panel">
+              <div class="dropdown-panel-label">Akun Donatur</div>
+              <a href="#" data-modal-open="riwayatModal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Riwayat Donasi
+              </a>
+              <a href="donation.php">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                Pilih Tempat Donasi
+              </a>
+              <a href="logout.php" class="is-danger">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Keluar
+              </a>
+            </div>
+          </div>
+        <?php else: ?>
+          <div class="dropdown-wrap">
+            <button type="button" class="dropdown-trigger" data-dropdown-toggle aria-expanded="false">
+              <span>Masuk</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="dropdown-panel">
+              <div class="dropdown-panel-label">Pilih Akses Masuk</div>
+              <a href="login.html">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                Mahasiswa / Donatur
+              </a>
+              <a href="login_admin.html">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Administrator
+              </a>
+            </div>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <button type="button" class="nav-toggle" data-nav-toggle aria-label="Buka menu navigasi" aria-expanded="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <nav class="mobile-drawer" data-mobile-drawer aria-label="Navigasi Mobile">
+    <ul class="mobile-nav-list">
+      <li><a href="#home">Beranda</a></li>
+      <li><a href="#about">Tentang Kami</a></li>
+      <li><a href="#donation">Cara Donasi</a></li>
+      <li><a href="donation.php">Pilih Tempat Donasi</a></li>
+      <li><a href="formpengajuan.php">Pengajuan Bantuan</a></li>
+      <li><a href="#contact">Kontak</a></li>
+      <?php if ($isLoggedIn): ?>
+        <li><a href="#" data-modal-open="riwayatModal">Riwayat Donasi</a></li>
+      <?php endif; ?>
+    </ul>
+    <div class="mobile-nav-divider"></div>
+    <?php if ($isLoggedIn): ?>
+      <p class="form-hint" style="margin-bottom:12px;">Masuk sebagai <strong><?= htmlspecialchars($_SESSION['username']) ?></strong></p>
+      <a href="logout.php" class="btn btn-danger-outline btn-block">Keluar</a>
+    <?php else: ?>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <a href="login.html" class="btn btn-primary btn-block">Masuk sebagai Mahasiswa</a>
+        <a href="login_admin.html" class="btn btn-secondary btn-block">Masuk sebagai Admin</a>
+      </div>
+    <?php endif; ?>
+  </nav>
+
+  <!-- Riwayat Modal -->
+  <div class="app-modal-backdrop" id="riwayatModal" aria-hidden="true" role="dialog" aria-labelledby="riwayatModalLabel">
+    <div class="app-modal">
+      <div class="app-modal-header">
+        <h3 id="riwayatModalLabel">Riwayat Donasi &amp; Pengajuan</h3>
+        <button type="button" class="app-modal-close" data-modal-close aria-label="Tutup">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="#home">Beranda</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#about">Tentang</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#donation">Donasi</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="formpengajuan.php">Pengajuan Bantuan</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#contact">Kontak</a>
-            </li>
-            <!-- Riwayat Button in Navbar -->
-            <?php if ($isLoggedIn): ?>
-              <li class="nav-item">
-                <a class="nav-link" href="#" data-toggle="modal" data-target="#riwayatModal">
-                  Riwayat
-                </a>
-              </li>
-            <?php endif; ?>
-            <!-- Show username and logout dropdown if logged in -->
-            <?php if ($isLoggedIn): ?>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
-                  aria-haspopup="true" aria-expanded="false">
-                  <i class="fas fa-user"></i> <?= $_SESSION['username']; ?>
-                </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <a class="dropdown-item" href="logout.php">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                  </a>
+      </div>
+      <div class="app-modal-body">
+        <?php if (count($donationStatus) > 0): ?>
+          <div class="history-list">
+            <?php foreach ($donationStatus as $status):
+              $statusClass = 'status-' . strtolower($status['status']);
+            ?>
+              <div class="history-row">
+                <div class="history-row-info">
+                  <strong><?= htmlspecialchars($status['type']) ?></strong>
+                  <span><?= htmlspecialchars($status['description']) ?></span>
                 </div>
-              </li>
-            <?php else: ?>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
-                  aria-haspopup="true" aria-expanded="false">
-                  <i class="fas fa-user"></i> Login
-                </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <a class="dropdown-item" href="login_admin.html">
-                    <i class="fas fa-user-shield"></i> Admin
-                  </a>
-                  <a class="dropdown-item" href="login.html">
-                    <i class="fas fa-user-graduate"></i> Mahasiswa
-                  </a>
+                <span class="status-badge <?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($status['status']) ?></span>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php else: ?>
+          <div class="empty-state">
+            <h3>Belum ada riwayat transaksi</h3>
+            <p>Donasi dan pengajuan bantuan yang Anda kirim akan muncul di sini.</p>
+          </div>
+        <?php endif; ?>
+      </div>
+      <div class="app-modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Tutup</button>
+        <a href="donation.php" class="btn btn-primary">Beri Donasi Lagi</a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section" id="home">
+      <div class="container-app hero-grid">
+        <div>
+          <span class="eyebrow-pill">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Penyaluran Terverifikasi &amp; Akuntabel
+          </span>
+          <h1 class="hero-title">
+            Salurkan Kebaikan dengan <span class="accent">Transparan</span> untuk Anak Panti Asuhan
+          </h1>
+          <p class="hero-subtitle">
+            Hubungkan kepedulian Anda langsung dengan panti asuhan dan posko bantuan yang terverifikasi—baik melalui donasi dana QRIS maupun bantuan logistik barang.
+          </p>
+          <div class="hero-cta-row">
+            <a href="donation.php" class="btn btn-primary btn-lg">
+              Beri Donasi Sekarang
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <a href="formpengajuan.php" class="btn btn-secondary btn-lg">Ajukan Bantuan</a>
+          </div>
+
+          <div class="hero-metrics tabular-nums">
+            <div class="metric-item">
+              <strong><?= $totalApprovedCenters ?></strong>
+              <span>Panti &amp; Posko Aktif</span>
+            </div>
+            <div class="metric-item">
+              <strong>Rp <?= number_format($totalConfirmedFunds, 0, ',', '.') ?></strong>
+              <span>Dana Terkonfirmasi</span>
+            </div>
+            <div class="metric-item">
+              <strong><?= $totalDonationsCount ?></strong>
+              <span>Transaksi Tercatat</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-art-frame">
+            <img src="assets/img/hero-donasi.jpg" alt="Relawan mahasiswa menyiapkan paket donasi buku, pakaian, dan kebutuhan pokok untuk anak panti asuhan">
+          </div>
+          <div class="hero-floating-tag">
+            <span class="floating-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            </span>
+            <div>
+              <strong>Terpantau Hingga Diterima</strong>
+              <span>Setiap donasi diverifikasi oleh tim admin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section-pad section-surface" id="about">
+      <div class="container-app about-grid">
+        <div class="about-art-wrap">
+          <img src="assets/img/about-community.jpg" alt="Anak-anak panti asuhan belajar dan membaca bersama relawan">
+        </div>
+
+        <div>
+          <span class="section-kicker">Tentang Kami</span>
+          <h2 class="section-heading">Menjembatani Donatur, Pengelola, dan Penerima Manfaat</h2>
+          <p class="section-lead">
+            Sistem Informasi Penyaluran Donasi dirancang untuk mempermudah pengumpulan dan distribusi bantuan agar tepat sasaran, terdokumentasi rapi, dan dapat dipantau statusnya.
+          </p>
+
+          <div class="vm-list">
+            <div class="vm-item">
+              <span class="vm-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
+              <div>
+                <h3>Visi</h3>
+                <p>Meningkatkan kualitas hidup dan pendidikan anak-anak di panti asuhan melalui kolaborasi bantuan masyarakat yang berkelanjutan.</p>
+              </div>
+            </div>
+            <div class="vm-item">
+              <span class="vm-icon is-coral" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <div>
+                <h3>Misi</h3>
+                <p>Menyalurkan setiap donasi dana maupun barang secara transparan dan akuntabel agar bantuan benar-benar sampai kepada pihak yang membutuhkan.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Donation Pathways Section -->
+    <section class="section-pad" id="donation">
+      <div class="container-app">
+        <span class="section-kicker">Cara Berkontribusi</span>
+        <h2 class="section-heading">Pilih Bentuk Bantuan yang Paling Sesuai</h2>
+        <p class="section-lead">Anda dapat berdonasi dalam bentuk dana melalui QRIS maupun barang kebutuhan pokok melalui posko pengumpulan resmi.</p>
+
+        <div class="pathway-grid">
+          <article class="pathway-card">
+            <div>
+              <div class="pathway-top">
+                <div class="pathway-icon-box" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                 </div>
-              </li>
-            <?php endif; ?>
+                <span class="pathway-tag">Instan via QRIS</span>
+              </div>
+              <h3 style="margin-top:18px;">Donasi Finansial</h3>
+              <p>Bantuan dana disalurkan untuk memenuhi kebutuhan harian, nutrisi, perlengkapan sekolah, dan operasional panti asuhan pilihan Anda.</p>
+            </div>
+            <div>
+              <div class="pathway-meta">
+                <span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Nominal fleksibel
+                </span>
+                <span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Verifikasi tercatat
+                </span>
+              </div>
+              <div style="margin-top:18px;">
+                <a href="donation.php" class="btn btn-navy btn-block">Pilih Panti &amp; Donasi Dana</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="pathway-card">
+            <div>
+              <div class="pathway-top">
+                <div class="pathway-icon-box is-sage" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                </div>
+                <span class="pathway-tag">Drop-Off Posko</span>
+              </div>
+              <h3 style="margin-top:18px;">Donasi Barang</h3>
+              <p>Sumbangkan bahan pangan, pakaian layak pakai, buku bacaan, maupun mainan edukatif melalui titik pengumpulan di Dekanat Undip.</p>
+            </div>
+            <div>
+              <div class="pathway-meta">
+                <span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Pangan, pakaian, buku
+                </span>
+                <span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Status pengiriman jelas
+                </span>
+              </div>
+              <div style="margin-top:18px;">
+                <a href="donation.php" class="btn btn-secondary btn-block">Pilih Panti &amp; Donasi Barang</a>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="process-strip">
+          <div class="process-step">
+            <span class="process-num">1</span>
+            <div>
+              <strong>Pilih Panti atau Posko</strong>
+              <span>Tentukan tujuan penyaluran dari daftar panti terverifikasi atau ajukan lokasi baru.</span>
+            </div>
+          </div>
+          <div class="process-step">
+            <span class="process-num">2</span>
+            <div>
+              <strong>Kirim Dana atau Barang</strong>
+              <span>Selesaikan pembayaran QRIS atau daftarkan barang untuk diserahkan ke posko pengumpulan.</span>
+            </div>
+          </div>
+          <div class="process-step">
+            <span class="process-num">3</span>
+            <div>
+              <strong>Pantau Verifikasi</strong>
+              <span>Tim admin memverifikasi setiap transaksi dan Anda dapat memantau statusnya di menu Riwayat.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="section-pad section-surface" id="contact">
+      <div class="container-app contact-grid">
+        <div class="contact-info-card">
+          <span class="section-kicker" style="color:var(--coral-400);">Hubungi Tim Kami</span>
+          <h3>Ada Pertanyaan atau Ingin Berkolaborasi?</h3>
+          <p>Kami siap membantu informasi seputar penyaluran donasi, pengajuan panti baru, maupun koordinasi logistik.</p>
+
+          <div class="contact-detail-list">
+            <div class="contact-detail-item">
+              <span class="contact-detail-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </span>
+              <div>
+                <strong>Posko Pengumpulan Utama</strong>
+                <span>Dekanat Undip, Jl. Prof. Soedarto, SH, Tembalang, Semarang</span>
+              </div>
+            </div>
+            <div class="contact-detail-item">
+              <span class="contact-detail-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </span>
+              <div>
+                <strong>Jam Layanan Penerimaan</strong>
+                <span>Senin – Jumat, 08.00 – 16.00 WIB</span>
+              </div>
+            </div>
+            <div class="contact-detail-item">
+              <span class="contact-detail-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </span>
+              <div>
+                <strong>Layanan Pengajuan Bantuan</strong>
+                <span>Gunakan halaman Pengajuan Bantuan untuk permohonan resmi panti.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-form-card">
+          <h3 style="font-size:1.3rem; margin-bottom:6px;">Kirim Pesan</h3>
+          <p class="form-hint" style="margin-bottom:22px;">Pesan Anda akan langsung masuk ke dashboard pengelola kami.</p>
+          <form method="POST" action="submit_contact.php">
+            <div class="form-field">
+              <label class="form-label" for="contact_name">Nama Lengkap</label>
+              <input type="text" id="contact_name" name="full_name" class="form-control-app" placeholder="Masukkan nama Anda" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="contact_email">Alamat Email</label>
+              <input type="email" id="contact_email" name="email" class="form-control-app" placeholder="nama@email.com" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="contact_message">Pesan</label>
+              <textarea id="contact_message" name="message" class="form-control-app" placeholder="Tuliskan pertanyaan atau masukan Anda..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">
+              Kirim Pesan
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container-app">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <span class="brand-mark" aria-hidden="true" style="background:rgba(255,255,255,0.12);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 21C12 21 3 15.2 3 8.8C3 5.6 5.45 3 8.5 3C10.37 3 12 4.02 12 5.55C12 4.02 13.63 3 15.5 3C18.55 3 21 5.6 21 8.8C21 15.2 12 21 12 21Z" fill="#D95D39"/>
+              </svg>
+            </span>
+            Donasi Panti Asuhan
+          </div>
+          <p style="font-size:0.9rem; max-width:340px; margin:0;">Platform digital penyaluran donasi dana dan barang yang terstruktur, transparan, dan akuntabel untuk panti asuhan.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigasi</h4>
+          <ul class="footer-links">
+            <li><a href="#home">Beranda</a></li>
+            <li><a href="#about">Tentang Kami</a></li>
+            <li><a href="donation.php">Tempat Donasi</a></li>
+            <li><a href="formpengajuan.php">Pengajuan Bantuan</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Akses Akun</h4>
+          <ul class="footer-links">
+            <li><a href="login.html">Login Mahasiswa</a></li>
+            <li><a href="signup.html">Daftar Akun Baru</a></li>
+            <li><a href="login_admin.html">Login Admin</a></li>
           </ul>
         </div>
       </div>
-    </nav>
-  </header>
 
-  <!-- Riwayat Modal -->
-<div class="modal fade" id="riwayatModal" tabindex="-1" role="dialog" aria-labelledby="riwayatModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="riwayatModalLabel">Riwayat Donasi dan Pengajuan</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <h4>Status Donasi:</h4>
-                <ul class="list-group">
-                    <?php foreach ($donationStatus as $status): ?>
-                        <li class="list-group-item">
-                            <strong><?= $status['type']; ?>:</strong> <?= $status['description']; ?>
-                            <span class="badge badge-info"><?= $status['status']; ?></span>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-  <!-- Home Section -->
-  <section class="home-sec" id="home">
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-6 col-md-12 home-content">
-          <h1>Selamat Datang di <span>Donasi Panti Asuhan</span></h1>
-          <h2>Bantu Kami Memberikan Kebahagiaan untuk Anak-Anak</h2>
-          <p>Dengan donasi Anda, kami bisa memberikan kebutuhan yang lebih baik untuk anak-anak di panti asuhan.</p>
-          <div class="buttons">
-            <a href="donation.php" class="btn1">Beri Donasi Sekarang</a>
-          </div>
-        </div>
-        <div class="col-lg-6 col-md-12 img-sec">
-          <img src="https://image.freepik.com/free-vector/volunteers-packing-donation-boxes_74855-5299.jpg"
-            alt="Anak Panti Asuhan" class="img-fluid">
-        </div>
+      <div class="footer-bottom">
+        <span>&copy; 2024 Donasi Panti Asuhan. Semua Hak Dilindungi.</span>
+        <span>Kebijakan Privasi &middot; Syarat dan Ketentuan</span>
       </div>
-    </div>
-  </section>
-
-    <!-- About Section -->
-    <section class="about-sec" id="about">
-    <div class="container">
-      <div class="heading">
-        <h2>Tentang Kami</h2>
-        <p>Kami adalah sebuah organisasi yang berfokus pada pemberian donasi kepada panti asuhan untuk meningkatkan
-          kualitas hidup anak-anak yang membutuhkan.</p>
-      </div>
-      <div class="row">
-        <div class="col-md-6">
-          <img src="https://th.bing.com/th/id/OIP.hSl1b7JeNaIUJScNKGxG3QHaE7?rs=1&pid=ImgDetMain" alt="Tentang Kami"
-            class="img-fluid">
-        </div>
-        <div class="col-md-6 about-txt">
-          <h3>Visi</h3>
-          <p>Meningkatkan kualitas hidup anak-anak di panti asuhan melalui bantuan dan donasi dari masyarakat.</p>
-          <h3>Misi</h3>
-          <p>Kami berkomitmen untuk menyalurkan donasi dengan transparan dan akuntabel agar setiap donasi sampai kepada
-            yang membutuhkan.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Donation Section -->
-  <section class="don-sec" id="donation">
-    <div class="container">
-      <div class="heading">
-        <h2>Bagaimana Anda Bisa Membantu</h2>
-        <p>Kami menerima berbagai jenis donasi, baik berupa uang, barang, maupun jasa.</p>
-      </div>
-      <div class="row">
-        <div class="col-lg-4 col-md-6 don-box">
-          <img src="2.png" alt="Donasi Uang">
-          <h3>Donasi Finansial</h3>
-          <p>Bantuan dalam bentuk finansial akan digunakan untuk memenuhi kebutuhan sehari-hari anak-anak.</p>
-        </div>
-        <div class="col-lg-4 col-md-6 don-box">
-          <img src="1.png" alt="Donasi Barang">
-          <h3>Donasi Barang</h3>
-          <p>Kami menerima berbagai barang kebutuhan sehari-hari seperti pakaian, makanan, dan mainan.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-<!-- Contact Section -->
-<section class="contact-section" id="contact">
-  <div class="container">
-    <div class="heading">
-      <h2>Kontak Kami</h2>
-      <p>Jika Anda memiliki pertanyaan atau ingin berkontribusi, jangan ragu untuk menghubungi kami.</p>
-    </div>
-    <div class="contact-form">
-      <form method="POST" action="submit_contact.php">
-        <div class="form-group">
-          <input type="text" name="full_name" class="form-control" placeholder="Nama" required>
-        </div>
-        <div class="form-group">
-          <input type="email" name="email" class="form-control" placeholder="Email" required>
-        </div>
-        <div class="form-group">
-          <textarea name="message" class="form-control" placeholder="Pesan" required></textarea>
-        </div>
-        <button type="submit" class="btn1">Kirim</button>
-      </form>
-    </div>
-  </div>
-</section>
-
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <h4>Donasi Panti Asuhan</h4>
-      <a>&copy; 2024. Semua Hak Dilindungi. Kebijakan Privasi | Syarat dan Ketentuan</a>
     </div>
   </footer>
 
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="assets/js/app.js"></script>
 </body>
-
 </html>
