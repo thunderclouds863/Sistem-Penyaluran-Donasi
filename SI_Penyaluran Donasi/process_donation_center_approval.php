@@ -1,74 +1,59 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['username'])) {
-  die("Unauthorized access. Please log in.");
+if (empty($_SESSION['username'])) {
+    header("Location: login.html");
+    exit();
 }
 
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "donation_system";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-  die("Connection failed: " . $conn->connect_error);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: donation.php");
+    exit();
 }
 
-// Cek apakah pengguna sudah login
-$loggedIn = isset($_SESSION['username']);
-if ($loggedIn) {
-  // Ambil ID user yang sedang login berdasarkan username
-  $conn = mysqli_connect("localhost", "root", "", "donation_system");
-  if ($conn) {
-    $username = $_SESSION['username'];  // username from session
-    $query = "SELECT id FROM signup WHERE username = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
+try {
+    $pdo = get_pdo();
+    $signup_id = get_current_user_id($pdo);
+    if (!$signup_id) {
+        header("Location: login.html");
+        exit();
+    }
 
-    if ($result->num_rows > 0) {
-      $user = $result->fetch_assoc();
-      $signup_id = $user['id'];  // Get the user's ID
+    $name = trim($_POST['donation_center_name'] ?? '');
+    $address = trim($_POST['donation_center_address'] ?? '');
+    $contact = trim($_POST['donation_center_contact'] ?? '');
+
+    if ($name === '' || $address === '' || $contact === '') {
+        set_flash('error', 'Detail tempat donasi tidak lengkap.');
+        header("Location: donation.php");
+        exit();
+    }
+
+    // Reuse existing center if already registered with same name & address
+    $find = $pdo->prepare("SELECT id FROM donation_centers WHERE name = :name AND address = :address LIMIT 1");
+    $find->execute([':name' => $name, ':address' => $address]);
+    $existing = $find->fetch();
+
+    if ($existing) {
+        $centerId = (int) $existing['id'];
     } else {
-      // Handle error if no user found
-      echo "User not found.";
-      exit;
-    }
-  }
-  // Process POST request
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Retrieve and sanitize inputs
-    $name = $_POST['donation_center_name'] ?? null;
-    $address = $_POST['donation_center_address'] ?? null;
-    $contact = $_POST['donation_center_contact'] ?? null;
-    $status = "Default";
-
-    if (!$name || !$address || !$contact) {
-      die("Invalid input. Please provide all required details.");
+        $stmt = $pdo->prepare("INSERT INTO donation_centers (signup_id, name, address, contact_info, status) VALUES (:signup_id, :name, :address, :contact, 'Default')");
+        $stmt->execute([
+            ':signup_id' => $signup_id,
+            ':name' => $name,
+            ':address' => $address,
+            ':contact' => $contact,
+        ]);
+        $centerId = (int) $pdo->lastInsertId();
     }
 
-    // Insert the new donation center into the database
-    $sql = "INSERT INTO donation_centers (signup_id, name, address, contact_info, status) VALUES (?, ?, ?, ?,?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("issss", $signup_id, $name, $address, $contact, $status);
+    $_SESSION['selected_donation_center_id'] = $centerId;
+    $_SESSION['selected_donation_center_name'] = $name;
 
-
-    if ($stmt->execute()) {
-      header("Location: jenis_donasi.html");
-    } else {
-      echo "Failed to update donation center status.";
-    }
-
-    $stmt->close();
-  }
-} else {
-  echo "Anda harus login terlebih dahulu untuk memilih tempat donasi.";
+    header("Location: jenis_donasi.html");
+    exit();
+} catch (PDOException $e) {
+    set_flash('error', 'Gagal memproses pilihan tempat donasi.');
+    header("Location: donation.php");
+    exit();
 }
-
-$conn->close();
-?>

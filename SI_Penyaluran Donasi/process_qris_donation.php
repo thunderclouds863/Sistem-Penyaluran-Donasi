@@ -1,70 +1,71 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 
-// Cek apakah pengguna sudah login
-$loggedIn = isset($_SESSION['username']);
+if (empty($_SESSION['username'])) {
+    header("Location: login.html");
+    exit();
+}
 
-if ($loggedIn) {
-    // Ambil ID user yang sedang login berdasarkan username
-    $conn = mysqli_connect("localhost", "root", "", "donation_system");
-    if ($conn) {
-        $username = $_SESSION['username']; // username from session
-        $query = "SELECT id FROM signup WHERE username = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: qris.php");
+    exit();
+}
 
-        if ($result->num_rows > 0) {
-            $user = $result->fetch_assoc();
-            $signup_id = $user['id']; // Get the user's ID
+if (!csrf_verify()) {
+    set_flash('error', 'Sesi formulir tidak valid. Silakan muat ulang halaman dan coba lagi.');
+    header("Location: qris.php");
+    exit();
+}
+
+try {
+    $pdo = get_pdo();
+    $signup_id = get_current_user_id($pdo);
+    if (!$signup_id) {
+        header("Location: login.html");
+        exit();
+    }
+
+    $donation_amount = filter_var($_POST['donation_amount'] ?? null, FILTER_VALIDATE_FLOAT);
+    $contact_info = trim($_POST['contact_info'] ?? '');
+
+    if ($donation_amount === false || $donation_amount < 1000 || $contact_info === '') {
+        set_flash('error', 'Masukkan nominal donasi minimal Rp 1.000 dan informasi kontak yang valid.');
+        header("Location: qris.php");
+        exit();
+    }
+
+    // Determine target donation_center_id from session or fallback to latest approved/default center
+    $donation_center_id = !empty($_SESSION['selected_donation_center_id']) ? (int) $_SESSION['selected_donation_center_id'] : null;
+    if (!$donation_center_id) {
+        $stmt = $pdo->prepare("SELECT id FROM donation_centers WHERE signup_id = :uid ORDER BY id DESC LIMIT 1");
+        $stmt->execute([':uid' => $signup_id]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $donation_center_id = (int) $row['id'];
         } else {
-            // Handle error if no user found
-            header("Location: login.php");
-            exit;
+            $fallback = $pdo->query("SELECT id FROM donation_centers WHERE status IN ('Approved', 'Default') ORDER BY id ASC LIMIT 1")->fetch();
+            $donation_center_id = $fallback ? (int) $fallback['id'] : null;
         }
     }
 
-    // Ambil `donation_center_id` dari tabel `donation_centers`
-    $donation_center_query = "SELECT id FROM donation_centers WHERE signup_id = ?";
-    $center_stmt = $conn->prepare($donation_center_query);
-    $center_stmt->bind_param("i", $signup_id);
-    $center_stmt->execute();
-    $center_result = $center_stmt->get_result();
-
-    if ($center_result->num_rows > 0) {
-        $center = $center_result->fetch_assoc();
-        $donation_center_id = $center['id'];
-    } else {
-        echo "No donation center found for this user.";
-        exit;
-    }
-
-    // Get the donation amount and contact info from the form
-    $donation_amount = htmlspecialchars(trim($_POST['donation_amount']));
-    $contact_info = htmlspecialchars(trim($_POST['contact_info']));
-
-    // Prepare the SQL statement to insert the donation data
-    $stmt = $conn->prepare(
-        "INSERT INTO financial_donations (amount, contact_info, status, signup_id, donation_center_id)
-         VALUES (?, ?, 'Pending', ?, ?)"
-    );
-    // "d" for float (donation_amount), "s" for string (contact_info), "i" for integer (signup_id, donation_center_id)
-    $stmt->bind_param("dsii", $donation_amount, $contact_info, $signup_id, $donation_center_id);
-
-    // Execute the query and check if successful
-    if ($stmt->execute()) {
-        // After inserting the data, redirect to payment success page
-        header("Location: payment-success.html");
+    if (!$donation_center_id) {
+        set_flash('error', 'Silakan pilih tempat donasi tujuan terlebih dahulu.');
+        header("Location: donation.php");
         exit();
-    } else {
-        echo "Error: " . $stmt->error;
     }
 
-    // Close the statement and connection
-    $stmt->close();
-    $conn->close();
-} else {
-    echo "Invalid request method.";
+    $stmt = $pdo->prepare("INSERT INTO financial_donations (amount, contact_info, status, signup_id, donation_center_id) VALUES (:amount, :contact, 'Pending', :uid, :cid)");
+    $stmt->execute([
+        ':amount' => $donation_amount,
+        ':contact' => $contact_info,
+        ':uid' => $signup_id,
+        ':cid' => $donation_center_id,
+    ]);
+
+    header("Location: payment-success.html");
+    exit();
+} catch (PDOException $e) {
+    set_flash('error', 'Gagal memproses donasi QRIS. Silakan coba kembali.');
+    header("Location: qris.php");
+    exit();
 }
-?>

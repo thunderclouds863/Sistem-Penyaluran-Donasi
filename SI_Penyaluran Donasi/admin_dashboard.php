@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/bootstrap.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_username'])) {
@@ -7,12 +7,7 @@ if (!isset($_SESSION['admin_username'])) {
     exit();
 }
 
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "donation_system";
-
+$flash = get_flash();
 $pending_centers = [];
 $financial_donations = [];
 $item_donations = [];
@@ -22,42 +17,45 @@ $confirmed_funds = 0;
 $approved_centers_count = 0;
 
 try {
-    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn = get_pdo();
 
-    // Handle form submissions
+    // Handle form submissions with CSRF verification
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $id = $_POST['id'] ?? null;
+        if (!csrf_verify()) {
+            set_flash('error', 'Token keamanan tidak valid. Silakan muat ulang halaman.');
+            header("Location: admin_dashboard.php");
+            exit();
+        }
+
+        $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
         $action = $_POST['action'] ?? null;
 
-        if ($action === 'approve_center') {
+        if ($id && $action === 'approve_center') {
             $stmt = $conn->prepare("UPDATE donation_centers SET status = 'Approved' WHERE id = :id");
-            $stmt->bindParam(':id', $id);
-            $stmt->execute();
-        } elseif ($action === 'reject_center') {
-            $reason = $_POST['reason'] ?? '';
+            $stmt->execute([':id' => $id]);
+            set_flash('success', 'Tempat donasi berhasil disetujui.');
+        } elseif ($id && $action === 'reject_center') {
+            $reason = trim($_POST['reason'] ?? '');
             $stmt = $conn->prepare("UPDATE donation_centers SET status = 'Rejected', rejection_reason = :reason WHERE id = :id");
-            $stmt->bindParam(':id', $id);
-            $stmt->bindParam(':reason', $reason);
-            $stmt->execute();
-        } elseif ($action === 'confirm_financial') {
+            $stmt->execute([':id' => $id, ':reason' => $reason]);
+            set_flash('success', 'Pengajuan tempat donasi telah ditolak.');
+        } elseif ($id && $action === 'confirm_financial') {
             $stmt = $conn->prepare("UPDATE financial_donations SET status = 'Confirmed' WHERE id = :id");
-            $stmt->bindParam(':id', $id);
-            $stmt->execute();
-        } elseif ($action === 'confirm_item') {
+            $stmt->execute([':id' => $id]);
+            set_flash('success', 'Donasi finansial berhasil dikonfirmasi.');
+        } elseif ($id && $action === 'confirm_item') {
             $stmt = $conn->prepare("UPDATE item_donations SET status = 'confirmed' WHERE id = :id");
-            $stmt->bindParam(':id', $id);
-            $stmt->execute();
-        } elseif ($action === 'approve_request') {
+            $stmt->execute([':id' => $id]);
+            set_flash('success', 'Donasi barang berhasil dikonfirmasi.');
+        } elseif ($id && $action === 'approve_request') {
             $stmt = $conn->prepare("UPDATE donation_requests SET status = 'Confirmed' WHERE id = :id");
-            $stmt->bindParam(':id', $id);
-            $stmt->execute();
-        } elseif ($action === 'reject_request') {
-            $reason = $_POST['reason'] ?? '';
+            $stmt->execute([':id' => $id]);
+            set_flash('success', 'Pengajuan bantuan berhasil disetujui.');
+        } elseif ($id && $action === 'reject_request') {
+            $reason = trim($_POST['reason'] ?? '');
             $stmt = $conn->prepare("UPDATE donation_requests SET status = 'Reject', rejection_reason = :reason WHERE id = :id");
-            $stmt->bindParam(':id', $id);
-            $stmt->bindParam(':reason', $reason);
-            $stmt->execute();
+            $stmt->execute([':id' => $id, ':reason' => $reason]);
+            set_flash('success', 'Pengajuan bantuan telah ditolak.');
         }
         header("Location: admin_dashboard.php");
         exit();
@@ -69,7 +67,7 @@ try {
                             INNER JOIN signup su ON dc.signup_id = su.id
                             WHERE dc.status = 'Pending'");
     $stmt->execute();
-    $pending_centers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pending_centers = $stmt->fetchAll();
 
     // Fetch pending financial donations
     $stmt = $conn->prepare("SELECT fd.id, fd.amount, fd.contact_info, fd.status, su.full_name, dc.name AS donation_center_name
@@ -78,7 +76,7 @@ try {
                             INNER JOIN donation_centers dc ON dc.id = fd.donation_center_id
                             WHERE fd.status = 'Pending'");
     $stmt->execute();
-    $financial_donations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $financial_donations = $stmt->fetchAll();
 
     // Fetch pending item donations
     $stmt = $conn->prepare("SELECT id.id, id.item_type, id.location, id.contact_info, id.status, su.full_name, dc.name AS donation_center_name
@@ -87,26 +85,26 @@ try {
                             INNER JOIN donation_centers dc ON dc.id = id.donation_center_id
                             WHERE LOWER(id.status) = 'pending'");
     $stmt->execute();
-    $item_donations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $item_donations = $stmt->fetchAll();
 
-    // Fetch pending donation requests
-    $stmt = $conn->prepare("SELECT dr.id, dr.assistance_type, dr.description, dr.status, su.full_name AS donor_name
+    // Fetch pending donation requests (including supporting document path)
+    $stmt = $conn->prepare("SELECT dr.id, dr.assistance_type, dr.description, dr.supporting_documents, dr.status, su.full_name AS donor_name
                             FROM donation_requests dr
                             INNER JOIN signup su ON dr.signup_id = su.id
                             WHERE dr.status = 'Pending'");
     $stmt->execute();
-    $donation_requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $donation_requests = $stmt->fetchAll();
 
     // Fetch contact messages
     $stmt = $conn->prepare("SELECT cm.full_name, cm.email, cm.message FROM contact_messages cm ORDER BY cm.id DESC");
     $stmt->execute();
-    $contact_messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $contact_messages = $stmt->fetchAll();
 
     // Live KPI summaries
     $confirmed_funds = (float) $conn->query("SELECT COALESCE(SUM(amount), 0) FROM financial_donations WHERE status = 'Confirmed'")->fetchColumn();
     $approved_centers_count = (int) $conn->query("SELECT COUNT(*) FROM donation_centers WHERE status = 'Approved'")->fetchColumn();
 } catch (PDOException $e) {
-    echo "Error: " . htmlspecialchars($e->getMessage());
+    $flash = ['type' => 'error', 'message' => 'Terjadi kesalahan saat memuat data dashboard.'];
 }
 
 $total_pending_queue = count($pending_centers) + count($financial_donations) + count($item_donations) + count($donation_requests);
@@ -238,6 +236,9 @@ $total_pending_queue = count($pending_centers) + count($financial_donations) + c
       </div>
 
       <main class="admin-content">
+        <?php if ($flash): ?>
+          <div class="alert-banner is-<?= e($flash['type']) ?>" role="status"><?= e($flash['message']) ?></div>
+        <?php endif; ?>
         <!-- Live KPI Summary -->
         <section class="kpi-grid tabular-nums" aria-label="Ringkasan operasional">
           <div class="kpi-card">
@@ -304,6 +305,7 @@ $total_pending_queue = count($pending_centers) + count($financial_donations) + c
                         <td>
                           <div class="action-group">
                             <form method="POST" style="display:inline;">
+                              <?= csrf_field() ?>
                               <input type="hidden" name="id" value="<?= $center['id'] ?>">
                               <button type="submit" class="btn btn-success btn-sm" name="action" value="approve_center">Setujui</button>
                             </form>
@@ -358,6 +360,7 @@ $total_pending_queue = count($pending_centers) + count($financial_donations) + c
                         <td><?= htmlspecialchars($donation['donation_center_name']) ?></td>
                         <td>
                           <form method="POST" style="display:inline;">
+                            <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= $donation['id'] ?>">
                             <button type="submit" class="btn btn-success btn-sm" name="action" value="confirm_financial">Konfirmasi Dana</button>
                           </form>
@@ -409,6 +412,7 @@ $total_pending_queue = count($pending_centers) + count($financial_donations) + c
                         <td><?= htmlspecialchars($donation['donation_center_name']) ?></td>
                         <td>
                           <form method="POST" style="display:inline;">
+                            <?= csrf_field() ?>
                             <input type="hidden" name="id" value="<?= $donation['id'] ?>">
                             <button type="submit" class="btn btn-success btn-sm" name="action" value="confirm_item">Konfirmasi Terima</button>
                           </form>
@@ -444,6 +448,7 @@ $total_pending_queue = count($pending_centers) + count($financial_donations) + c
                     <tr>
                       <th>Jenis Bantuan</th>
                       <th>Deskripsi Permohonan</th>
+                      <th>Dokumen</th>
                       <th>Pemohon</th>
                       <th>Aksi</th>
                     </tr>
@@ -452,11 +457,19 @@ $total_pending_queue = count($pending_centers) + count($financial_donations) + c
                     <?php foreach ($donation_requests as $request): ?>
                       <tr>
                         <td><strong><?= htmlspecialchars($request['assistance_type']) ?></strong></td>
-                        <td style="max-width:380px;"><?= htmlspecialchars($request['description']) ?></td>
+                        <td style="max-width:340px;"><?= htmlspecialchars($request['description']) ?></td>
+                        <td>
+                          <?php if (!empty($request['supporting_documents'])): ?>
+                            <a href="<?= e($request['supporting_documents']) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Lihat Dokumen</a>
+                          <?php else: ?>
+                            <span style="color:var(--ink-400); font-size:0.84rem;">—</span>
+                          <?php endif; ?>
+                        </td>
                         <td><?= htmlspecialchars($request['donor_name']) ?></td>
                         <td>
                           <div class="action-group">
                             <form method="POST" style="display:inline;">
+                              <?= csrf_field() ?>
                               <input type="hidden" name="id" value="<?= $request['id'] ?>">
                               <button type="submit" class="btn btn-success btn-sm" name="action" value="approve_request">Setujui</button>
                             </form>
@@ -536,6 +549,7 @@ $total_pending_queue = count($pending_centers) + count($financial_donations) + c
         </button>
       </div>
       <form method="POST">
+        <?= csrf_field() ?>
         <div class="app-modal-body">
           <p style="font-size:0.9rem; color:var(--ink-500); margin-bottom:14px;">
             Berikan alasan penolakan untuk <strong id="rejectTargetName" style="color:var(--navy-900);"></strong>:
