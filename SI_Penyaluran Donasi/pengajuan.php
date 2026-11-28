@@ -71,12 +71,22 @@ try {
 
         $safeName = bin2hex(random_bytes(16)) . '.' . $ext;
         $targetPath = $uploadDir . '/' . $safeName;
-        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
-            set_flash('error', 'Tidak dapat menyimpan dokumen pendukung di server.');
-            header("Location: formpengajuan.php");
-            exit();
+        if (function_exists('demo_upload_store')) {
+            $stored = demo_upload_store($file['tmp_name'], $targetPath, 'donasi/documents/' . $safeName, 'uploads/documents/' . $safeName, $mime);
+            if ($stored === null) {
+                set_flash('error', 'Tidak dapat menyimpan dokumen pendukung di server.');
+                header("Location: formpengajuan.php");
+                exit();
+            }
+            $stored_document_path = $stored;
+        } else {
+            if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+                set_flash('error', 'Tidak dapat menyimpan dokumen pendukung di server.');
+                header("Location: formpengajuan.php");
+                exit();
+            }
+            $stored_document_path = 'uploads/documents/' . $safeName;
         }
-        $stored_document_path = 'uploads/documents/' . $safeName;
     }
 
     $stmt = $pdo->prepare("INSERT INTO donation_requests (assistance_type, description, supporting_documents, status, signup_id) VALUES (:type, :desc, :doc, 'Pending', :uid)");

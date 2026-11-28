@@ -12,4 +12,7 @@ WORKDIR /var/www/html
 COPY . .
 RUN if [ -f composer.json ] && [ ! -d vendor ]; then composer install --no-dev --no-interaction --no-progress; fi \
  && chown -R www-data:www-data /var/www/html
+RUN printf '<Directory "/var/www/html/deploy">\n  Require all denied\n</Directory>\nCGIPassAuth On\n' > /etc/apache2/conf-enabled/zz-deny-deploy.conf \
+ && sed -i 's#DocumentRoot /var/www/html#DocumentRoot "/var/www/html/SI_Penyaluran Donasi"#' /etc/apache2/sites-available/000-default.conf && printf '<Directory "/var/www/html/SI_Penyaluran Donasi">\n  AllowOverride All\n  Require all granted\n</Directory>\n' >> /etc/apache2/apache2.conf \
+ && printf '<FilesMatch "\\.html$">\n  SetHandler application/x-httpd-php\n</FilesMatch>\n' > /etc/apache2/conf-enabled/zz-html-php.conf
 CMD ["bash", "deploy/start-vercel.sh"]
